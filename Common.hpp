@@ -11,7 +11,6 @@
 #include <windows.h>
 #endif // _WIN32
 
-
 //管理自由链表数组的长度
 const size_t NLISTS = 240;
 //最大可以一次分配多大的内存64K
