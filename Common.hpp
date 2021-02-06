@@ -23,7 +23,7 @@ const size_t PAGE_SHIFT = 12;
 //对于PageCache的最大可以存放NPAGES页
 const size_t NPAGES = 129;
 
-// 我觉得这个函数既然形参没用到，那么这么写就不好。。。老子要改一下。
+// 我觉得这个函数既然形参没用到，那么这么写就不好。。。要改一下。
 static inline void* SystemAlloc(size_t npage)
 {
 #ifdef _WIN32
