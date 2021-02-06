@@ -11,6 +11,9 @@
 #include <windows.h>
 #endif // _WIN32
 
+#define bit32 // 默认是32位系统
+//#define bit64
+
 //管理自由链表数组的长度
 const size_t NLISTS = 240;
 //最大可以一次分配多大的内存64K
@@ -28,12 +31,15 @@ static inline void* SystemAlloc(size_t npage)
 	//对于从系统申请内存，一次申请128页的内存，这样的话，提高效率，一次申请够不需要频繁申请
 	// 如果调用成功,返回分配的首地址
 	void* ptr = VirtualAlloc(NULL, (NPAGES - 1) << PAGE_SHIFT, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+	// 测试代码
+	/*unsigned __int64 temp = (unsigned __int64)ptr >> 12;
+	if (temp > INT_MAX) {
+		int t = temp;
+	}*/
 	if (ptr == nullptr)
 	{
 		throw std::bad_alloc();
 	}
-
-	//void* ptr = malloc((NPAGES - 1) << PAGE_SHIFT);
 
 	return ptr;
 #else 
@@ -59,7 +65,6 @@ static inline void SystemFree(void* ptr)
 		throw std::bad_alloc();
 	}
 
-	//free(ptr);
 #else
 	free(ptr);
 #endif //_WIN32
@@ -143,7 +148,13 @@ private:
 
 //对于span是为了对于thread cache还回来的内存进行管理，
 //一个span中包含了内存块
-typedef size_t PageID;
+#if defined(bit32)
+typedef unsigned int PageID;
+#elif defined(bit64)
+typedef unsigned __int64 PageID;
+#endif // bit32
+
+
 struct Span
 {
 	PageID _pageid = 0; //页号
