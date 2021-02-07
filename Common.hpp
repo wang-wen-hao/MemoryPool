@@ -23,52 +23,52 @@ const size_t PAGE_SHIFT = 12;
 //对于PageCache的最大可以存放NPAGES页
 const size_t NPAGES = 129;
 
-// 我觉得这个函数既然形参没用到，那么这么写就不好。。。要改一下。
-static inline void* SystemAlloc(size_t npage)
-{
-#ifdef _WIN32
-	//到这里也就是，PageCache里面也没有大于申请的npage的页，要去系统申请内存
-	//对于从系统申请内存，一次申请128页的内存，这样的话，提高效率，一次申请够不需要频繁申请
-	// 如果调用成功,返回分配的首地址
-	void* ptr = VirtualAlloc(NULL, (NPAGES - 1) << PAGE_SHIFT, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-	// 测试代码
-	/*unsigned __int64 temp = (unsigned __int64)ptr >> 12;
-	if (temp > INT_MAX) {
-		int t = temp;
-	}*/
-	if (ptr == nullptr)
-	{
-		throw std::bad_alloc();
-	}
-
-	return ptr;
-#else 
-	//Linux下
-	void* ptr = malloc((NPAGES - 1) << PAGE_SHIFT);
-	if (ptr == nullptr)
-	{
-		throw std::bad_alloc();
-	}
-
-	return ptr;
-#endif //_WIN32
-}
-
-static inline void SystemFree(void* ptr)
-{
-#ifdef _WIN32
-	//到这里也就是，PageCache里面也没有大于申请的npage的页，要去系统申请内存
-	//对于从系统申请内存，一次申请128页的内存，这样的话，提高效率，一次申请够不需要频繁申请
-	VirtualFree(ptr, 0, MEM_RELEASE);
-	if (ptr == nullptr)
-	{
-		throw std::bad_alloc();
-	}
-
-#else
-	free(ptr);
-#endif //_WIN32
-}
+//// 我觉得这个函数既然形参没用到，那么这么写就不好。。。要改一下。
+//static inline void* SystemAlloc(size_t npage)
+//{
+//#ifdef _WIN32
+//	//到这里也就是，PageCache里面也没有大于申请的npage的页，要去系统申请内存
+//	//对于从系统申请内存，一次申请128页的内存，这样的话，提高效率，一次申请够不需要频繁申请
+//	// 如果调用成功,返回分配的首地址
+//	void* ptr = VirtualAlloc(NULL, (NPAGES - 1) << PAGE_SHIFT, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+//	// 测试代码
+//	/*unsigned __int64 temp = (unsigned __int64)ptr >> 12;
+//	if (temp > INT_MAX) {
+//		int t = temp;
+//	}*/
+//	if (ptr == nullptr)
+//	{
+//		throw std::bad_alloc();
+//	}
+//
+//	return ptr;
+//#else 
+//	//Linux下
+//	void* ptr = malloc((NPAGES - 1) << PAGE_SHIFT);
+//	if (ptr == nullptr)
+//	{
+//		throw std::bad_alloc();
+//	}
+//
+//	return ptr;
+//#endif //_WIN32
+//}
+//
+//static inline void SystemFree(void* ptr)
+//{
+//#ifdef _WIN32
+//	//到这里也就是，PageCache里面也没有大于申请的npage的页，要去系统申请内存
+//	//对于从系统申请内存，一次申请128页的内存，这样的话，提高效率，一次申请够不需要频繁申请
+//	VirtualFree(ptr, 0, MEM_RELEASE);
+//	if (ptr == nullptr)
+//	{
+//		throw std::bad_alloc();
+//	}
+//
+//#else
+//	free(ptr);
+//#endif //_WIN32
+//}
 
 // https://www.cnblogs.com/zkwarrior/p/5645046.html 符号(void *)何解？符号(void **)又何解？？
 /// 返回的是void*的引用
@@ -342,7 +342,7 @@ public:
 	static inline size_t Index(size_t bytes)
 	{
 		//开辟的字节数，必须小于可以开辟的最大的字节数
-		assert(bytes < MAXBYTES);
+		assert(bytes <= MAXBYTES);
 
 		//每个对齐区间中，有着多少条自由链表
 		static int group_array[4] = { 16, 56, 56, 112 };

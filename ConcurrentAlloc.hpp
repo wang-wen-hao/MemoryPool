@@ -8,9 +8,10 @@ void* ConcurrentAlloc(size_t size)
 	if (size > MAXBYTES)
 	{
 		//大于64K，小于128页，就到PageCache中申请内存
-		size_t roundsize = ClassSize::_RoundUp(size, 1 << PAGE_SHIFT);
+		/*size_t roundsize = ClassSize::_RoundUp(size, 1 << PAGE_SHIFT);
 		size_t npage = roundsize >> PAGE_SHIFT;
-		Span* span = PageCache::GetInstance()->NewSpan(npage);
+		Span* span = PageCache::GetInstance()->NewSpan(npage);*/
+		Span* span = PageCache::GetInstance()->AllocBigPageObj(size);
 		void* ptr = (void*)(span->_pageid << PAGE_SHIFT);
 
 		return ptr;
@@ -46,7 +47,8 @@ void ConcurrentFree(void* ptr)
 	if (size > MAXBYTES)
 	{
 		//大于64K
-		PageCache::GetInstance()->RelaseToPageCache(span);
+		//free(ptr);
+		PageCache::GetInstance()->FreeBigPageObj(ptr, span);
 	}
 	else
 	{

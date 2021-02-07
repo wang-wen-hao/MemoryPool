@@ -77,7 +77,7 @@ void* ThreadCache::Allocate(size_t byte)
 void ThreadCache::Deallocate(void* ptr, size_t byte)
 {
 	//向自由链表的数组中的自由链表归还内存
-	assert(byte < MAXBYTES);
+	//assert(byte <= MAXBYTES);
 	size_t index = ClassSize::Index(byte);
 	
 	FreeList* freelist = &_freelist[index];
@@ -88,7 +88,7 @@ void ThreadCache::Deallocate(void* ptr, size_t byte)
 	//开始回收内存块到中心缓存
 	// 到底一次从central cache中申请的内存块数量是多少呢？
 	// 什么情况下会调用？
-	if (freelist->Size() >= freelist->MaxSize())
+	if (freelist->Size() >= 2 * freelist->MaxSize())
 	{
 		
 		ListTooLong(freelist, byte);

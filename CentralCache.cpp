@@ -8,30 +8,6 @@
 	
 #endif // !Lazy
 
-
-//打桩（写一段测试一段）
-//从中心缓存获取一定数量的对象给thread cache，进行测试直接使用malloc进行分配
-//size_t CentralCache::FetchRangeObj(void*& start, void*& end, size_t num ,size_t bytes)
-//{
-//	//分配num个内存大小为byte的内存块
-//	start = malloc(bytes * num);
-//	end = (char*)start + bytes * (num - 1);
-//	void* cur = start;
-//
-//	//将所有分配好num个内存块连接起来
-//	while (cur <= end)
-//	{
-//		void* next = (char*)cur + bytes;
-//		NEXT_OBJ(cur) = next;
-//
-//		cur = next;
-//	}
-//
-//	NEXT_OBJ(end) = nullptr;
-//
-//	return num;
-//}
-
 //获取的这个span，当Central Cache中存在span的时候，直接从这个里面获取，否则到Page Cache中获取Page的span
 //如果是获取Page的span，只是将span进行返回，而不对span进行任何操作
 Span* CentralCache::GetOneSpan(SpanList* spanlist, size_t bytes)
@@ -75,7 +51,8 @@ Span* CentralCache::GetOneSpan(SpanList* spanlist, size_t bytes)
 	NEXT_OBJ(cur) = nullptr;
 	newSpan->_objlist = start;
 	// 感觉这里不对，_objsize在申请的时候就已经设置了
-	newSpan->_objsize = bytes;//申请的这个span里面的内存大小，所以不一定正好等于npage? 对吗？bytes只是一小块啊！怎么能代表newSpan!
+	newSpan->_objsize = bytes;//
+	//newSpan->_objsize = newSpan->_npage << PAGE_SHIFT; // 为什么不是它呢？
 	newSpan->_usecount = 0;
 
 	spanlist->PushFront(newSpan);

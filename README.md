@@ -1,4 +1,9 @@
 # MemoryPool  
+## 文件说明
+ThreadCache.hpp ThreadCache.cpp 线程缓存    
+CentralCache.hpp CentralCache.cpp 中心缓存  
+PageCache.hpp PageCache.cpp 页缓存  
+Common.hpp 基础组件  
 
 ## 一、项目要解决的问题  
 * 内存碎片问题   

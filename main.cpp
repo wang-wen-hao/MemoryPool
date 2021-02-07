@@ -2,7 +2,7 @@
 #include "ConcurrentAlloc.hpp"
 #include <vector>
 
-#define MAXSIZE 1024
+#define MAXSIZE 1024 
 /*
 	tls(thread local storage)线程本地存储
 */
@@ -91,10 +91,10 @@ int main()
 {
 	printf("==============每轮申请的内存是：%ubyte==============\n", MAXSIZE);
 	std::cout << "===========================================================================" << std::endl;
-	BenchmarkMalloc(100, 10, 1000);
+	BenchmarkMalloc(100, 20, 1000);
 	std::cout << "===========================================================================" << std::endl;
 	std::cout << "===========================================================================" << std::endl;
-	BenchmarkConcurrentMalloc(100, 10, 1000);
+	BenchmarkConcurrentMalloc(100, 20, 1000);
 	std::cout << "===========================================================================" << std::endl;
 	
 	return 0;

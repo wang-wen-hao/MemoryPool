@@ -68,6 +68,8 @@ public:
 #endif // Lazy
 
 	
+	Span* AllocBigPageObj(size_t size);
+	void FreeBigPageObj(void* ptr, Span* span);
 
 	//从系统申请span或者大于要申请的npage的Pagespan中申请
 	Span* NewSpan(size_t npage);

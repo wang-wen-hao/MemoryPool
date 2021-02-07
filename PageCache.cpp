@@ -7,33 +7,81 @@ SPtr PageCache::_inst_ptr = nullptr; // 别忘了初始化
 std::mutex PageCache::_mutex_Page;
 #endif // !Lazy
 
+//大对象申请，直接从系统
+Span* PageCache::AllocBigPageObj(size_t size)
+{
+	assert(size > MAXBYTES);
 
+	size = ClassSize::_RoundUp(size, PAGE_SHIFT); //对齐
+	size_t npage = size >> PAGE_SHIFT;
+	if (npage < NPAGES)
+	{
+		Span* span = NewSpan(npage);
+		span->_objsize = size;
+		return span;
+	}
+	else
+	{
+		void* ptr = VirtualAlloc(0, npage << PAGE_SHIFT,
+			MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+
+		if (ptr == nullptr)
+			throw std::bad_alloc();
+
+		Span* span = new Span;
+		span->_npage = npage;
+		span->_pageid = (PageID)ptr >> PAGE_SHIFT;
+		span->_objsize = npage << PAGE_SHIFT;
+
+		_id_span_map[span->_pageid] = span;
+
+		return span;
+	}
+}
+
+void PageCache::FreeBigPageObj(void* ptr, Span* span)
+{
+	size_t npage = span->_objsize >> PAGE_SHIFT;
+	if (npage < NPAGES) //相当于还是小于128页
+	{
+		span->_objsize = 0;
+		RelaseToPageCache(span);
+	}
+	else
+	{
+		_id_span_map.erase(span->_pageid); // 我觉得这里应该改成id
+		delete span;
+		VirtualFree(ptr, 0, MEM_RELEASE);
+	}
+}
 
 Span* PageCache::NewSpan(size_t npage)
 {
 	//加锁，防止多个线程同时到PageCache中申请大于64k的内存，这句话不对，npage>=1而不是>=4
 	std::unique_lock<std::mutex> lock(_mtx);
-	if (npage >= NPAGES)
-	{
-		void* ptr = SystemAlloc(npage);
-		Span* span = new Span();
-		// 例如 void * ptr是一个地址为0x007c0000，那么右移12位变成了0x007c0，转换为10进制是1984
-		// 用右移PAGE_SHIFT的好处是，这样连续的页，那么他们的_pageid也是整数连续的，比如下一页pageid就是1985
-		span->_pageid = (PageID)ptr >> PAGE_SHIFT; 
-		span->_npage = npage; // 问题这里的npage不对吧，不应该是128吗？系统申请的就申请了128页。这样做的原因是方便释放的时候判断
-		span->_objsize = npage << PAGE_SHIFT; //左移12位，单位是比特，实际上没那么大
+	//if (npage >= NPAGES)
+	//{
+	//	void* ptr = SystemAlloc(npage);
+	//	Span* span = new Span();
+	//	// 例如 void * ptr是一个地址为0x007c0000，那么右移12位变成了0x007c0，转换为10进制是1984
+	//	// 用右移PAGE_SHIFT的好处是，这样连续的页，那么他们的_pageid也是整数连续的，比如下一页pageid就是1985
+	//	span->_pageid = (PageID)ptr >> PAGE_SHIFT; 
+	//	span->_npage = npage; // 问题这里的npage不对吧，不应该是128吗？系统申请的就申请了128页。这样做的原因是方便释放的时候判断
+	//	span->_objsize = npage << PAGE_SHIFT; //左移12位，单位是比特，实际上没那么大
 
-		//这里只需要将申请的大的内存块的第一个页号插入进去就好了。。。为什么？
-		//难道是因为它不会与其他页合并，所以不需要每页都标记？
-		_id_span_map[span->_pageid] = span;
+	//	//这里只需要将申请的大的内存块的第一个页号插入进去就好了。。。为什么？
+	//	//难道是因为它不会与其他页合并，所以不需要每页都标记？
+	//	_id_span_map[span->_pageid] = span;
 
-		return span;
-	}
+	//	return span;
+	//}
+
+	assert(npage < NPAGES); // 断言
 
 	//从系统申请大于64K小于128页的内存的时候，需要将span的objsize进行一个设置为了释放的时候进行合并
 	Span* span = _NewSpan(npage);
 	//这个就是对于一个从PageCache申请span的时候，来记录申请这个span的所要分割的时候
-	span->_objsize = span->_npage << PAGE_SHIFT;
+	//span->_objsize = span->_npage << PAGE_SHIFT;
 	return span;
 }
 
@@ -76,7 +124,13 @@ Span* PageCache::_NewSpan(size_t npage)
 
 	//到这里也就是，PageCache里面也没有大于申请的npage的页，要去系统申请内存，也就是说都是空的？？
 	//对于从系统申请内存，一次申请128页的内存，这样的话，提高效率，一次申请够不需要频繁申请
-	void* ptr = SystemAlloc(npage);
+	//void* ptr = SystemAlloc(npage);
+	// 到这里说明SpanList中没有合适的span,只能向系统申请128页的内存
+#ifdef _WIN32
+	void* ptr = VirtualAlloc(0, (NPAGES - 1) * (1 << PAGE_SHIFT), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
+	//  brk
+#endif
 
 	Span* largespan = new Span();
 	largespan->_pageid = (PageID)(ptr) >> PAGE_SHIFT;
@@ -103,7 +157,9 @@ Span* PageCache::MapObjectToSpan(void* obj)
 	
 	auto it = _id_span_map.find(pageid);
 
-	assert(it != _id_span_map.end());
+	/***********************************************************************************/
+	assert(it != _id_span_map.end()); // 这里有时候会出bug，等我查一下。。。
+	/***********************************************************************************/
 
 	//返回的是这个内存地址页号为那个的span中拿出来的
 	return it->second;
@@ -120,9 +176,13 @@ void PageCache::RelaseToPageCache(Span* span)
 		// 需要释放的有哈希表的key-value，和申请的页
 		void* ptr = (void*)(span->_pageid << PAGE_SHIFT);
 		_id_span_map.erase(span->_pageid);
-		SystemFree(ptr);
-		delete span;
+#ifdef _WIN32
+		//SystemFree(ptr);
+		VirtualFree(ptr, 0, MEM_RELEASE);
+#else
 
+#endif
+		delete span;
 		return;
 	}
 
