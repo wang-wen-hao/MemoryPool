@@ -2,7 +2,8 @@
 #include "ConcurrentAlloc.hpp"
 #include <vector>
 
-#define MAXSIZE 1024 
+
+#define MAXSIZE 32 
 /*
 	tls(thread local storage)线程本地存储
 */

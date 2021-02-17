@@ -3,3 +3,7 @@
 ################################################################################
 
 /.vs/MemoryPool/v16/Browse.VC.db
+/.vs/MemoryPool/v16/Browse.VC.opendb
+/.vs/MemoryPool/v16/ipch/AutoPCH/64c8e006fb44dd38/MAIN.ipch
+/.vs/MemoryPool/v16/ipch/AutoPCH/c5b41e97d959c2e0/CONCURRENTALLOC.ipch
+/.vs/MemoryPool/v16/.suo

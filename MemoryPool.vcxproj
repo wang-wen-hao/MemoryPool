@@ -18,6 +18,19 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CentralCache.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\PageCache.cpp" />
+    <ClCompile Include="src\TreadCache.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\CentralCache.hpp" />
+    <ClInclude Include="src\Common.hpp" />
+    <ClInclude Include="src\ConcurrentAlloc.hpp" />
+    <ClInclude Include="src\PageCache.hpp" />
+    <ClInclude Include="src\ThreadCache.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{22618BB6-1FAB-48C8-89C9-2BA8E016AAD8}</ProjectGuid>
@@ -123,19 +136,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="CentralCache.hpp" />
-    <ClInclude Include="Common.hpp" />
-    <ClInclude Include="ConcurrentAlloc.hpp" />
-    <ClInclude Include="PageCache.hpp" />
-    <ClInclude Include="ThreadCache.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="CentralCache.cpp" />
-    <ClCompile Include="PageCache.cpp" />
-    <ClCompile Include="TreadCache.cpp" />
-    <ClCompile Include="main.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
